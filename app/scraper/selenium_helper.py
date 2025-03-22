@@ -1,40 +1,40 @@
 import logging
 import time
-from datetime import datetime
-from selenium import webdriver
+from selenium.webdriver import Chrome
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
-
+from typing import List, Optional
 
 logger = logging.getLogger("selenium_helper")
 
 class SeleniumHelper:
-    def __init__(self, headless = True):
+    def __init__(self, headless: bool = True):
         self.headless = headless
         self.driver = self.setup_driver()
 
-    def setup_driver(self):
-            """Initialize and return a Selenium WebDriver."""
-            chrome_options = Options()
-            if self.headless:
-                chrome_options.add_argument("--headless")
+    def setup_driver(self) -> Chrome:
+        """Initialize and return a Selenium WebDriver."""
+        chrome_options = Options()
+        if self.headless:
+            chrome_options.add_argument("--headless")
 
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--window-size=1920,1080")
-            chrome_options.add_argument(
-                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            )
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument(
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        )
 
-            driver = webdriver.Chrome(options=chrome_options)
-            logger.info("WebDriver initialized successfully")
-            return driver
+        driver = Chrome(options=chrome_options)
+        logger.info("WebDriver initialized successfully")
+        return driver
         
-    def navigate_to(self, url):
+    def navigate_to(self, url: str) -> bool:
         """Navigate to a given URL."""
         try:
             self.driver.get(url)
@@ -44,10 +44,10 @@ class SeleniumHelper:
             return False
         return True
     
-    def wait_for_element_by_id(self, selector, by=By.ID, timeout=10):
+    def wait_for_element_by_id(self, selector: str, by: By = By.ID, timeout: int = 10) -> Optional[WebElement]:
         return self.wait_for_element(selector, by, timeout)
     
-    def wait_for_element(self, selector, by=By.CSS_SELECTOR, timeout=10):
+    def wait_for_element(self, selector: str, by: By = By.CSS_SELECTOR, timeout: int = 10) -> Optional[WebElement]:
         """Wait for an element to be present on the page."""
         try:
             return WebDriverWait(self.driver, timeout).until(
@@ -57,7 +57,7 @@ class SeleniumHelper:
             logger.warning(f"Timeout waiting for element: {selector}")
             return None
     
-    def wait_for_element_to_be_clickable(self, selector, by=By.CSS_SELECTOR, timeout=10):
+    def wait_for_element_to_be_clickable(self, selector: str, by: By = By.CSS_SELECTOR, timeout: int = 10) -> Optional[WebElement]:
         """Wait until the element is visible, scroll it into view, and ensure it's clickable."""
         try:
             element = WebDriverWait(self.driver, timeout).until(
@@ -68,13 +68,13 @@ class SeleniumHelper:
             logger.error(f"Element not clickable: {selector}")
             return None
         
-    def get_elements_by_X_Path(self, selector):
+    def get_elements_by_X_Path(self, selector: str) -> List[WebElement]:
         return self.get_elements(selector, By.XPATH)
         
-    def get_elements_by_id(self, selector):
+    def get_elements_by_id(self, selector: str) -> List[WebElement]:
         return self.get_elements(selector, By.ID)
     
-    def get_elements(self, selector, by=By.CSS_SELECTOR):
+    def get_elements(self, selector: str, by: By = By.CSS_SELECTOR) -> List[WebElement]:
         """Retrieve all elements matching a selector."""
         try:
             return self.driver.find_elements(by, selector)
@@ -82,10 +82,10 @@ class SeleniumHelper:
             logger.warning(f"No elements found for selector: {selector}")
             return []
         
-    def get_element_by_id(self, selector):
+    def get_element_by_id(self, selector: str) -> Optional[WebElement]:
         return self.get_element(selector, By.ID)
         
-    def get_element(self, selector, by=By.CSS_SELECTOR):
+    def get_element(self, selector: str, by: By = By.CSS_SELECTOR) -> Optional[WebElement]:
         """Retrieve the first element matching a selector."""
         try:
             return self.driver.find_element(by, selector)
@@ -93,7 +93,7 @@ class SeleniumHelper:
             logger.warning(f"No element found for selector: {selector}")
             return None
 
-    def extract_text(self, element, selector, by=By.CSS_SELECTOR):
+    def extract_text(self, element: WebElement, selector: str, by: By = By.CSS_SELECTOR) -> str:
         """Extract text from a child element."""
         try:
             return element.find_element(by, selector).text.strip()
@@ -101,15 +101,56 @@ class SeleniumHelper:
             logger.warning(f"Could not extract text from {selector}")
             return ""
 
-    def extract_attribute(self, element, selector, attribute, by=By.CSS_SELECTOR):
+    def extract_attribute(self, element: WebElement, selector: str, attribute: str, by: By = By.CSS_SELECTOR) -> str:
         """Extract an attribute from a child element"""
         try:
-            return element.find_element(by, selector).get_attribute(attribute)
+            child_element = element.find_element(by, selector)
+            s = child_element.get_attribute(attribute)
+            return s
         except (NoSuchElementException, StaleElementReferenceException):
             logger.warning(f"Could not extract attribute {attribute} from {selector}")
             return ""
 
-    def has_next_page(self, next_button_selector):
+    def extract_attribute_till_loaded(self, element: WebElement, selector: str, attribute: str, by: By = By.CSS_SELECTOR) -> str:
+        """Extract an attribute from a child element"""
+        try:
+            self.driver.execute_script("arguments[0].scrollIntoView();", element)
+            WebDriverWait(element, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+            )
+            child_element = element.find_element(by, selector)
+            return child_element.get_attribute(attribute)
+        except (NoSuchElementException, StaleElementReferenceException):
+            logger.warning(f"Could not extract attribute {attribute} from {selector}")
+            return
+        
+    def resolve_and_get_current_url(self, url: str, timeout: int = 5) -> str:
+        """Open the URL in a new tab, wait for redirect to resolve, and return the final URL."""
+        original_window = self.driver.current_window_handle
+
+        self.driver.execute_script("window.open('');")
+        WebDriverWait(self.driver, timeout).until(EC.number_of_windows_to_be(2))
+
+        new_window = [w for w in self.driver.window_handles if w != original_window][0]
+        self.driver.switch_to.window(new_window)
+
+        self.driver.get(url)
+        
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                lambda driver: driver.current_url != url
+            )
+        except Exception as e:
+            print("Timeout resolving link:", url)
+
+        resolved_url = self.driver.current_url
+
+        self.driver.close()
+        self.driver.switch_to.window(original_window)
+
+        return resolved_url
+        
+    def has_next_page(self, next_button_selector: str) -> bool:
         """Check if a next page button is available"""
         try:
             next_button = self.driver.find_element(By.CSS_SELECTOR, next_button_selector)
@@ -117,7 +158,7 @@ class SeleniumHelper:
         except NoSuchElementException:
             return False
 
-    def navigate_to_next_page(self, next_button_selector, content_selector, timeout=10):
+    def navigate_to_next_page(self, next_button_selector: str, content_selector: str, timeout: int = 10) -> bool:
         """Click the next page button and wait for new content to load."""
         try:
             current_elements = len(self.driver.find_elements(By.XPATH, content_selector))
@@ -148,8 +189,7 @@ class SeleniumHelper:
             logger.error(f"Failed to navigate to the next page: {str(e)}")
             return False
         
-    # TODO: wait until elementcount changes
-    def close(self):
+    def close(self) -> None:
         """Close the WebDriver"""
         if self.driver:
             self.driver.quit()
