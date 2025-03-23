@@ -26,12 +26,13 @@ class BestBuyScraper(Scraper):
         super().__init__(self.BASE_URL, headless=headless)
 
     def parse_element(self, element) -> Dict[str, str]:
-        title: str = self.selenium.extract_text(element, self.PRODUCT_NAME_SELECTOR)
         price: str = self.selenium.extract_text(element, self.PRODUCT_PRICE_SELECTOR)
         price = re.findall(r"\$?([\d,]+\.\d{2})", price)[0].replace(",", "")
-        rating: str = self.selenium.extract_attribute(element, self.RATING_SELECTOR, "content")
+        title: str = self.selenium.extract_text(element, self.PRODUCT_NAME_SELECTOR)
         sponsor: str = self.selenium.extract_text(element, self.SPONSORED_LABEL_SELECTOR)
+        rating: str = self.selenium.extract_attribute(element, self.RATING_SELECTOR, "content")
         img: str = self.selenium.extract_attribute_till_loaded(element, self.IMAGE_SELECTOR, "src")
+
         if sponsor:
             url: str = self.selenium.extract_attribute(element, self.SPONSORED_LINK_SELECTOR, "href")
             url = self.selenium.resolve_and_get_current_url(url)
@@ -39,6 +40,7 @@ class BestBuyScraper(Scraper):
         else:
             url: str = self.selenium.extract_attribute(element, self.PRODUCT_URL_SELECTOR, "href")
             id = self.resolve_id_from_url(url)
+
         if title.startswith("Open Box"):
             brand: str = title.split(" ")[3]
         else:

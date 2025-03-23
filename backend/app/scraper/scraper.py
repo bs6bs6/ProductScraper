@@ -16,7 +16,8 @@ class Scraper(ABC):
     def parse_element(self, element: Any) -> Any:
         """Abstract method for child class implementation"""
         pass
-
+    
+    @abstractmethod
     def scrape(self, max_pages: int = 3) -> None:
         """Scrape method to be implemented by child classes"""
         pass

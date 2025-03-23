@@ -1,8 +1,10 @@
 import logging
 import time
+import os
 from selenium.webdriver import Chrome
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -30,7 +32,15 @@ class SeleniumHelper:
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         )
 
-        driver = Chrome(options=chrome_options)
+        chrome_binary = os.getenv("CHROME_BINARY")
+        if chrome_binary:
+            chrome_options.binary_location = chrome_binary
+            chrome_driver = os.getenv("CHROME_DRIVER")
+            service = Service("/usr/bin/chromedriver")
+            driver = Chrome(service=service, options=chrome_options)
+        else:
+            driver = Chrome(options=chrome_options)
+            
         logger.info("WebDriver initialized successfully")
         return driver
         

@@ -1,7 +1,7 @@
 import logging
 from sqlmodel import Session, select
 from typing import List, Dict
-from app.models.product import Product
+from models.product import Product
 from scraper import BestBuyScraper
 from db import engine
 
