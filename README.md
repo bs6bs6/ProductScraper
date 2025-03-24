@@ -11,6 +11,10 @@ A full-stack application that scrapes product data from BestBuy and displays it 
 - Start scraper on demand
 - MySQL database for persistent storage
 
+![image](./img/image.png)
+![image](./img/image2.png)
+
+
 ## Quick Start with Docker
 
 ```bash
