@@ -36,7 +36,7 @@ class SeleniumHelper:
         if chrome_binary:
             chrome_options.binary_location = chrome_binary
             chrome_driver = os.getenv("CHROME_DRIVER")
-            service = Service("/usr/bin/chromedriver")
+            service = Service(chrome_driver)
             driver = Chrome(service=service, options=chrome_options)
         else:
             driver = Chrome(options=chrome_options)

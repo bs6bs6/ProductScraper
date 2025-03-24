@@ -26,6 +26,7 @@ class BestBuyScraper(Scraper):
         super().__init__(self.BASE_URL, headless=headless)
 
     def parse_element(self, element) -> Dict[str, str]:
+        # Extract data from the element
         price: str = self.selenium.extract_text(element, self.PRODUCT_PRICE_SELECTOR)
         price = re.findall(r"\$?([\d,]+\.\d{2})", price)[0].replace(",", "")
         title: str = self.selenium.extract_text(element, self.PRODUCT_NAME_SELECTOR)
@@ -33,6 +34,7 @@ class BestBuyScraper(Scraper):
         rating: str = self.selenium.extract_attribute(element, self.RATING_SELECTOR, "content")
         img: str = self.selenium.extract_attribute_till_loaded(element, self.IMAGE_SELECTOR, "src")
 
+        # if the link is a sponsored link, redirect to the actual product page and get the id
         if sponsor:
             url: str = self.selenium.extract_attribute(element, self.SPONSORED_LINK_SELECTOR, "href")
             url = self.selenium.resolve_and_get_current_url(url)
@@ -41,10 +43,7 @@ class BestBuyScraper(Scraper):
             url: str = self.selenium.extract_attribute(element, self.PRODUCT_URL_SELECTOR, "href")
             id = self.resolve_id_from_url(url)
 
-        if title.startswith("Open Box"):
-            brand: str = title.split(" ")[3]
-        else:
-            brand: str = title.split(" ")[0]
+        brand = self.extract_brand(title)
 
         return {
             "id": id,
@@ -57,6 +56,17 @@ class BestBuyScraper(Scraper):
             "scrape_timestamp": datetime.now().isoformat()
         }
     
+    def extract_brand(self, title: str) -> str:
+        title = re.sub(r'^\(.*?\)\s*', '', title)  # "(Refurbished Excellent)" -> ""
+        title = re.sub(r'^Refurbished\s*\(.*?\)\s*-\s*', '', title)  #"Refurbished (Excellent) - " -> ""
+        title = re.sub(r'^Refurbished\s*\(.*?\)\s*', '', title)  #"Refurbished (Excellent)" -> ""
+        title = re.sub(r'^Open Box\s*-\s*', '', title)  #"Open Box - " -> ""
+
+        #Extract brand — usually first word after cleanup
+        brand = title.split(" ")[0]
+
+        return brand
+    
     def resolve_id_from_url(self, url: str) -> str:
         match = re.search(r'/(\d+)(?:\?|$)', url)
         return match.group(1) if match else None
@@ -67,7 +77,8 @@ class BestBuyScraper(Scraper):
 
         self.selenium.navigate_to(url)
         self.selenium.wait_for_element_by_id(self.LANDMARK_PRODUCT_LISTING_ID)
-
+        
+        # Accept the one trust banner
         one_trust_banner = self.selenium.get_element_by_id(self.ONETRUST_BANNER_ID)
 
         if one_trust_banner:
@@ -81,7 +92,8 @@ class BestBuyScraper(Scraper):
 
             current_items = self.selenium.get_elements_by_X_Path(self.ITEM_SELECTOR)
 
-            for element in current_items[len(all_items):]:  # Only process new items
+            # Only process new items
+            for element in current_items[len(all_items):]:  
                 item_data = self.parse_element(element)
                 if item_data:
                     all_items.append(item_data)
